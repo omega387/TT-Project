@@ -1,36 +1,67 @@
 import tkinter as tk
-from tkinter import filedialog, Label, Button
+from tkinter import filedialog, Label, Button, messagebox
 from PIL import Image, ImageTk
 import numpy as np
 import tensorflow as tf
+import sys
+import os
 
 
+class NullWriter:
+    def write(self, text):
+        pass
+
+    def flush(self):
+        pass
+
+
+if sys.stdout is None:
+    sys.stdout = NullWriter()
+if sys.stderr is None:
+    sys.stderr = NullWriter()
+
+
+def resource_path(relative_path):
+
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+
+model = None
 try:
-    model = tf.keras.models.load_model('cat_dog_classifier.keras')
-    print("Model Loaded")
-except:
-    print("Error: 'cat_dog_classifier.keras' not found. Run train_model.py first.")
+    model_path = resource_path('cat_dog_classifier.keras')
+    model = tf.keras.models.load_model(model_path)
+except Exception as e:
+    messagebox.showerror("Error", f"Failed to load model:\n{e}")
 
 
 def classify_image(file_path):
-    img = Image.open(file_path)
-    img = img.resize((128, 128))
-    img_array = np.array(img)
-    img_array = img_array / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
+    if model is None:
+        messagebox.showerror("Error", "Model is not loaded. Cannot predict.")
+        return
 
+    try:
+        img = Image.open(file_path)
+        img = img.resize((128, 128))
+        img_array = np.array(img)
+        img_array = img_array / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
 
-    prediction = model.predict(img_array)
+        prediction = model.predict(img_array, verbose=0)
 
+        if prediction[0][0] > 0.5:
+            result = "It's a DOG!"
+            color = "green"
+        else:
+            result = "It's a CAT!"
+            color = "blue"
 
-    if prediction[0][0] > 0.5:
-        result = "It's a DOG!"
-        color = "green"
-    else:
-        result = "It's a CAT!"
-        color = "blue"
-
-    label_result.config(text=result, fg=color)
+        label_result.config(text=result, fg=color)
+    except Exception as e:
+        messagebox.showerror("Prediction Error", str(e))
 
 
 def upload_image():
@@ -45,7 +76,6 @@ def upload_image():
         label_result.config(text="")
 
         classify_image(file_path)
-
 
 
 root = tk.Tk()

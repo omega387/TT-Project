@@ -35,7 +35,7 @@ model = Sequential([
     Flatten(),
     Dense(128, activation='relu'),
     Dropout(0.5),
-    Dense(1, activation='sigmoid')  # Binary classification
+    Dense(1, activation='sigmoid')
 ])
 
 
